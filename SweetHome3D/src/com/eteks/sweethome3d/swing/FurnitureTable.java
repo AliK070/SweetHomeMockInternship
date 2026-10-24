@@ -760,13 +760,35 @@ public class FurnitureTable extends JTable implements View, Printable {
           public Component getTableCellRendererComponent(JTable table, Object value, 
                                  boolean isSelected, boolean hasFocus, int row, int column) {
             // Delegate rendering to existing cell renderer 
+            if (HomePieceOfFurniture.SortableProperty.NAME == tableColumn.getIdentifier()) {
+              HomePieceOfFurniture piece = (HomePieceOfFurniture)value;
+              JLabel nameRenderer = (JLabel)defaultRenderer.getTableCellRendererComponent(table,
+                  piece != null ? piece.getName() : null, false, false, row, column);
+              nameRenderer.setOpaque(true);
+              nameRenderer.setBackground(Color.WHITE);
+              nameRenderer.setForeground(Color.BLACK);
+              if (piece != null) {
+                Content iconContent = piece instanceof HomeFurnitureGroup
+                    ? TreeTableNameCellRenderer.GROUP_ICON_CONTENT
+                    : piece.getIcon();
+                nameRenderer.setIcon(IconManager.getInstance().getIcon(
+                    iconContent, table.getRowHeight() - table.getRowMargin(), table));
+              } else {
+                nameRenderer.setIcon(null);
+              }
+              return nameRenderer;
+            }
             TableCellRenderer cellRenderer = tableColumn.getCellRenderer();
             Component rendererComponent = cellRenderer.getTableCellRendererComponent(table, value, 
                 isSelected, hasFocus, row, column);
             if (rendererComponent instanceof JCheckBox) {
               // Prefer a x sign for boolean values instead of check boxes
-              rendererComponent = defaultRenderer.getTableCellRendererComponent(table, 
-                  ((JCheckBox)rendererComponent).isSelected() ? "x" : "", false, false, row, column);
+              JLabel booleanRenderer = new JLabel(
+                  ((JCheckBox)rendererComponent).isSelected() ? "x" : "", JLabel.CENTER);
+              booleanRenderer.setOpaque(true);
+              booleanRenderer.setBackground(Color.WHITE);
+              booleanRenderer.setForeground(Color.BLACK);
+              rendererComponent = booleanRenderer;
             }
             rendererComponent.setBackground(Color.WHITE);
             rendererComponent.setForeground(Color.BLACK);
@@ -778,8 +800,28 @@ public class FurnitureTable extends JTable implements View, Printable {
       // Change printable column header renderer
       printableColumn.setHeaderRenderer(printableHeaderRenderer);
       printableColumnModel.addColumn(printableColumn);
-    }    
+    }
+    if (!homeFurnitureColumnIsVisible(columnModel, HomePieceOfFurniture.SortableProperty.LEVEL)) {
+      final TableColumn tableColumn = ((FurnitureTableColumnModel)columnModel).availableColumns.get(
+          HomePieceOfFurniture.SortableProperty.LEVEL);
+      TableColumn printableColumn = new TableColumn();
+      printableColumn.setIdentifier(tableColumn.getIdentifier());
+      printableColumn.setHeaderValue(tableColumn.getHeaderValue());
+      printableColumn.setCellRenderer(tableColumn.getCellRenderer());
+      printableColumn.setHeaderRenderer(printableHeaderRenderer);
+      printableColumnModel.addColumn(printableColumn);
+    }
     return print(g, pageFormat, pageIndex, printableColumnModel, Color.BLACK);
+  }
+
+  private boolean homeFurnitureColumnIsVisible(TableColumnModel columnModel,
+                                                HomePieceOfFurniture.SortableProperty property) {
+    for (int columnIndex = 0; columnIndex < columnModel.getColumnCount(); columnIndex++) {
+      if (property == columnModel.getColumn(columnIndex).getIdentifier()) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
